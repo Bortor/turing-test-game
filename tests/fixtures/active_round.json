@@ -1,0 +1,42 @@
+[
+  {
+    "type": "match.update",
+    "status": {
+      "status": "matched",
+      "roomId": "room_fixture",
+      "guessUnlocksAt": 2000,
+      "firstMessageDeadlineAt": 60000,
+      "endsAt": 600000,
+      "serverNow": 1000
+    }
+  },
+  {
+    "type": "room.subscribed",
+    "room": {
+      "state": "active",
+      "serverNow": 1000,
+      "messages": [
+        {"id": "system-1", "sender": "system", "text": "连接已建立。", "sequence": 1},
+        {"id": "peer-1", "sender": "peer", "text": "你好，刚匹配上", "sequence": 2}
+      ]
+    }
+  },
+  {
+    "type": "room.update",
+    "room": {
+      "state": "active",
+      "messages": [
+        {"id": "peer-2", "sender": "peer", "text": "今天有点忙，刚回来", "sequence": 3}
+      ]
+    }
+  },
+  {
+    "type": "room.update",
+    "room": {
+      "state": "complete",
+      "peerLocked": true,
+      "result": {"correct": true, "actualIdentity": "ai"},
+      "serverNow": 4000
+    }
+  }
+]
