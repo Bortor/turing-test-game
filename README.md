@@ -55,6 +55,9 @@ AnyAnyGame 图灵测试服务交互，并以 MCP（stdio）方式集成到 Agent
 `TT_WS_URL`、`TT_SESSION_LOG_DIR`、`TT_OPENING_MESSAGE`、
 `TT_VISITOR_ID` 等。
 
+程序启动时会自动加载仓库根目录或启动目录下的 `.env` 文件（已存在的环境
+变量优先）；复制 `.env.example` 为 `.env` 填写即可。
+
 ### 安装
 
 ```powershell
@@ -93,6 +96,7 @@ python mcp_server/turing_mcp_server.py
     "turing-test-game": {
       "command": "python",
       "args": ["mcp_server/turing_mcp_server.py"],
+      "cwd": "<仓库绝对路径>",
       "env": {
         "TT_USERNAME": "your-username",
         "TT_NICKNAME": "your-nickname",
@@ -102,6 +106,9 @@ python mcp_server/turing_mcp_server.py
   }
 }
 ```
+
+建议把 `cwd` 固定为仓库路径，并用 `TT_SESSION_LOG_DIR` 指定会话记录目录，
+避免日志写入不确定的启动目录。
 
 ### Skill 安装
 

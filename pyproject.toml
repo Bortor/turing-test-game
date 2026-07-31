@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
   "mcp>=1.8",
   "websockets>=13",
+  "python-dotenv>=1.0",
 ]
 
 [project.scripts]

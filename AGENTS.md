@@ -49,6 +49,8 @@ turing-game state
 
 - 环境变量：`TT_USERNAME` / `TT_NICKNAME`（至少一个）与 `TT_PW`（必填）；
   可选变量见 `src/turing_game/models.py` 与 `.env.example`。
+- `.env` 会在启动时自动加载（仓库根目录或启动目录，已存在的环境变量优先）；
+  建议固定 MCP 的 `cwd` 或设置 `TT_SESSION_LOG_DIR`，避免会话记录写入不确定目录。
 - MCP 服务器：`python mcp_server/turing_mcp_server.py`（stdio）。
 - 梗库构建：`python scripts/build_kb.py`（可选 `--merge FILE` 合并外部笔记）；
   检索：`python scripts/search_kb.py <关键词>`。

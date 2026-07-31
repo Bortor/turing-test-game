@@ -161,7 +161,7 @@ def build(merge_file: Path | None = None) -> None:
         )
 
     save()  # initialize file
-    for seed in SEEDS:
+    for seed in dict.fromkeys(SEEDS):
         print(f"[{seed}]", flush=True)
         titles = search_titles(seed)
         for title in titles:
@@ -186,7 +186,9 @@ def build(merge_file: Path | None = None) -> None:
         for key, content in load_notes(merge_file).items():
             title = key.split("—")[0].strip() or key
             if title in collected:
-                collected[title]["keywords"].extend([k for k in key.split() if k])
+                collected[title]["keywords"] = list(
+                    dict.fromkeys(collected[title]["keywords"] + [k for k in key.split() if k])
+                )
                 collected[title]["summary"] += "\n\n[外部笔记]\n" + content[:600]
             else:
                 collected[title] = {

@@ -148,7 +148,13 @@ class TuringClient:
                 self._last_wait_seq = self._event_seq
                 return {"ok": True, "timed_out": False, "events": fresh, "state": self.snapshot()}
             if self.state in {GameState.RESULT, GameState.CLOSED, GameState.ERROR}:
-                return {"ok": True, "timed_out": True, "events": [], "state": self.snapshot()}
+                return {
+                    "ok": True,
+                    "timed_out": True,
+                    "finished": True,
+                    "events": [],
+                    "state": self.snapshot(),
+                }
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 return {"ok": True, "timed_out": True, "events": [], "state": self.snapshot()}
@@ -166,7 +172,7 @@ class TuringClient:
             raise TuringClientError("消息不能为空")
         if len(message) > 2000:
             raise TuringClientError("消息过长，最多 2000 个字符")
-        if self.state not in {GameState.ACTIVE, GameState.MATCHED, GameState.LOCKED_WAIT, GameState.RESULT}:
+        if self.state not in {GameState.ACTIVE, GameState.MATCHED, GameState.LOCKED_WAIT}:
             raise TuringClientError("当前不在可聊天状态")
         if not self._room_id:
             raise TuringClientError("房间尚未建立")
@@ -326,7 +332,7 @@ class TuringClient:
         try:
             directory = Path(self.config.session_log_dir)
             directory.mkdir(parents=True, exist_ok=True)
-            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
             path = directory / f"{stamp}_{reason}.md"
             lines = [
                 "# Turing Test 对局记录",

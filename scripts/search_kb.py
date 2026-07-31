@@ -26,8 +26,6 @@ def tokenize(text: str) -> list[str]:
     """Tokenize: Chinese chars as bigrams, latin/digits as lowercase words."""
     text = text.lower()
     tokens: list[str] = []
-    for match in _BIGRAM_RE.finditer(text):
-        pass  # handled below via sliding window
     # extract latin/number words
     for word in re.findall(r"[a-z0-9]+", text):
         tokens.append(word)

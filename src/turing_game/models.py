@@ -6,6 +6,17 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dotenv 为可选便利项
+    load_dotenv = None
+
+if load_dotenv is not None:
+    # 支持仓库根目录 .env（自动向上查找）与启动目录 .env；已有环境变量优先
+    load_dotenv()
+    load_dotenv(Path.cwd() / ".env", override=False)
 
 
 class GameState(StrEnum):
@@ -38,6 +49,7 @@ class GameConfig:
     visitor_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     # Keep this aligned with the currently deployed web client.  The service
     # rejects stale fingerprints before it creates a matchmaking ticket.
+    # 服务端更新版本后可能失效，可通过 TT_CLIENT_VERSION 覆盖为当前抓包值。
     client_version: str = "b2f868e056d23fc34fa9ae49d5dcdce6b4f818ef"
     protocol_version: int = 3
     chat_duration_sec: int = 600
@@ -51,7 +63,8 @@ class GameConfig:
     opening_message: str = "你好，刚连上，你等多久了？"
     opening_guard_sec: float = 12.0
     message_cooldown_sec: float = 2.5
-    # 会话记录落盘目录（默认相对启动目录，可用 TT_SESSION_LOG_DIR 覆盖）
+    # 会话记录落盘目录（默认相对启动目录，可用 TT_SESSION_LOG_DIR 覆盖；
+    # MCP 场景建议显式设置绝对路径或固定启动 cwd）
     session_log_dir: str = "sessions"
 
     @classmethod
@@ -62,11 +75,21 @@ class GameConfig:
 
         def integer(name: str, default: int) -> int:
             raw = os.getenv(name)
-            return int(raw) if raw else default
+            if not raw:
+                return default
+            try:
+                return int(raw)
+            except ValueError:
+                return default
 
         def number(name: str, default: float) -> float:
             raw = os.getenv(name)
-            return float(raw) if raw else default
+            if not raw:
+                return default
+            try:
+                return float(raw)
+            except ValueError:
+                return default
 
         return cls(
             base_url=os.getenv("TT_BASE_URL", defaults.base_url).rstrip("/"),
