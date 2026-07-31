@@ -49,8 +49,13 @@ AnyAnyGame 图灵测试服务交互，并以 MCP（stdio）方式集成到 Agent
 python -m pip install -e .
 ```
 
-> 如果直接把本仓库地址交给支持 `AGENTS.md` 的 Agent，克隆后 Agent 会按仓库内
-> 指引完成安装、测试与运行配置；复制 `.env.example` 为 `.env` 即可填写凭据。
+> 已实测：全新 `git clone` 后执行 `python -m pip install -e .` 即可安装，
+> `turing-game state` 与离线测试（5/5）可直接运行。把仓库地址交给 Agent 时，
+> Codex 等支持 `AGENTS.md` 约定的 Agent 会自动读取仓库内指引；若你的 Agent
+> 平台不读取该文件（如部分 Hermes 配置），把 `AGENTS.md` 内容作为上下文提供
+> 即可。前置条件：Python 3.11+、可访问 GitHub/PyPI 的网络（国内建议配置代理
+> 或镜像）、以及 `TT_USERNAME`/`TT_NICKNAME`/`TT_PW` 凭据（无凭据只能跑
+> 离线测试）。
 
 ### 命令行
 

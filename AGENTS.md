@@ -14,12 +14,33 @@
 - `hermes_skill/turing-test-game/`：Agent skill（仅工具操作说明）
 - `tests/`：离线协议回放测试
 
+## 前置条件
+
+- Python 3.11+
+- 可访问 GitHub 与 PyPI 的网络（国内网络可能需要代理或镜像源）
+- 凭据：`TT_USERNAME` / `TT_NICKNAME`（至少一个）与 `TT_PW`；
+  无凭据时可以完成安装与离线测试，但无法进行真实对局
+
 ## 安装与测试
 
 ```powershell
+# Windows (PowerShell)
 python -m pip install -e .
 $env:PYTHONPATH = "src"
 python -m unittest discover -s tests -v
+```
+
+```bash
+# macOS / Linux
+python -m pip install -e .
+PYTHONPATH=src python -m unittest discover -s tests -v
+```
+
+## 验证安装
+
+```powershell
+python -c "from turing_game.client import TuringClient; print(TuringClient().snapshot()['state'])"
+turing-game state
 ```
 
 ## 运行
@@ -29,6 +50,11 @@ python -m unittest discover -s tests -v
 - MCP 服务器：`python mcp_server/turing_mcp_server.py`（stdio）。
 - 梗库构建：`python scripts/build_kb.py`（可选 `--merge FILE` 合并外部笔记）；
   检索：`python scripts/search_kb.py <关键词>`。
+
+## AGENTS.md 约定说明
+
+Codex 等 Agent 会在打开仓库时自动读取本文件。若宿主 Agent 不支持该约定
+（例如部分 Hermes 配置），请将本文件内容作为上下文提供给 Agent 后再安装。
 
 ## 修改边界
 
