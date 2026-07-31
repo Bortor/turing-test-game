@@ -49,6 +49,9 @@ AnyAnyGame 图灵测试服务交互，并以 MCP（stdio）方式集成到 Agent
 python -m pip install -e .
 ```
 
+> 如果直接把本仓库地址交给支持 `AGENTS.md` 的 Agent，克隆后 Agent 会按仓库内
+> 指引完成安装、测试与运行配置；复制 `.env.example` 为 `.env` 即可填写凭据。
+
 ### 命令行
 
 ```powershell
