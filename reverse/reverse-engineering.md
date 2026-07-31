@@ -95,7 +95,7 @@ room_ZZZZZZZZZZZZ → 对手 ZZZZ
 - "本机记录 X / Y" + "Z%"（本机战绩，与 localStorage stats 一致）
 
 ### 对手 ID 格式
-- UNKNOWN_XXXX（4位随机大写字母数字，如 UNKNOWN_FOVP）
+- UNKNOWN_XXXX（4位随机大写字母数字，如 UNKNOWN_ABCD）
 
 ## 8. 待补抓信息
 
