@@ -130,13 +130,20 @@ python scripts/build_kb.py
 python scripts/build_kb.py --merge path/to/notes.md
 ```
 
+新增单个梗（毫秒级，零 API 费用，不触发萌娘百科请求）：
+
+```powershell
+python scripts/add_meme.py "梗名" "解释/用法/识别要点"
+```
+
 检索：
 
 ```powershell
 python scripts/search_kb.py 绷不住
 ```
 
-MCP 环境下可用 `meme_search` 工具检索同一份知识库。
+MCP 环境下可用 `meme_search` 工具检索同一份知识库（索引按
+`memes.json` 的修改时间自动刷新，加梗后无需重启 server）。
 
 ## 目录结构
 

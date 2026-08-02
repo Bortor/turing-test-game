@@ -28,6 +28,9 @@ class GameState(StrEnum):
     MATCHED = "matched"
     ACTIVE = "active"
     LOCKED_WAIT = "locked_wait"
+    # 告别期（2026-08-02 服务端新增）：结算后房间 state=extended，
+    # 双方可继续聊天（chatExtension.canSend），5 分钟后彻底关闭
+    EXTENDED = "extended"
     RESULT = "result"
     CLOSED = "closed"
     ERROR = "error"
@@ -50,7 +53,8 @@ class GameConfig:
     # Keep this aligned with the currently deployed web client.  The service
     # rejects stale fingerprints before it creates a matchmaking ticket.
     # 服务端更新版本后可能失效，可通过 TT_CLIENT_VERSION 覆盖为当前抓包值。
-    client_version: str = "b2f868e056d23fc34fa9ae49d5dcdce6b4f818ef"
+    # 2026-08-02 更新：服务端 serviceVersion b2f868e → 37a9c12（新增告别期/chatExtension）
+    client_version: str = "37a9c12cd3cc7c9f35b1089960999b2f3f6ef035"
     protocol_version: int = 3
     chat_duration_sec: int = 600
     match_timeout_sec: int = 30

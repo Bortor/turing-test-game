@@ -184,7 +184,9 @@ def build(merge_file: Path | None = None) -> None:
     # 可选：合并外部笔记
     if merge_file is not None:
         for key, content in load_notes(merge_file).items():
-            title = key.split("—")[0].strip() or key
+            # 标题可能带括号后缀（如「赛博线面（2026-08-02 用户自述）」），
+            # 剥离后与已有词条对齐，避免产生重复条目
+            title = re.split(r"[—（(]", key)[0].strip() or key
             if title in collected:
                 collected[title]["keywords"] = list(
                     dict.fromkeys(collected[title]["keywords"] + [k for k in key.split() if k])

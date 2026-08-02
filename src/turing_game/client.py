@@ -51,6 +51,10 @@ class TuringClient:
         "active": GameState.ACTIVE,
         "locked": GameState.LOCKED_WAIT,
         "locked_wait": GameState.LOCKED_WAIT,
+        # 2026-08-02 服务端新增房间状态：ended=结算完成（等回到房间/查看结果），
+        # extended=告别期（双方可继续聊天）
+        "ended": GameState.RESULT,
+        "extended": GameState.EXTENDED,
         "result": GameState.RESULT,
         "complete": GameState.RESULT,
         "completed": GameState.RESULT,
@@ -88,10 +92,13 @@ class TuringClient:
         self._my_guess: str | None = None
         self._opponent_guess: str | None = None
         self._peer_locked = False
+        self._first_locked_by: str | None = None
         self._result: dict[str, Any] | None = None
         self._last_error: str | None = None
         self._last_sequence = 0
         self._room_subscribe_sent = False
+        # 告别期状态（2026-08-02）：服务端房间对象新增 chatExtension 字段
+        self._chat_extension: dict[str, Any] | None = None
 
     # ------------------------------------------------------------------
     # Public lifecycle
@@ -147,7 +154,17 @@ class TuringClient:
             if fresh:
                 self._last_wait_seq = self._event_seq
                 return {"ok": True, "timed_out": False, "events": fresh, "state": self.snapshot()}
-            if self.state in {GameState.RESULT, GameState.CLOSED, GameState.ERROR}:
+            if self.state in {GameState.CLOSED, GameState.ERROR}:
+                return {
+                    "ok": True,
+                    "timed_out": True,
+                    "finished": True,
+                    "events": [],
+                    "state": self.snapshot(),
+                }
+            # 结算后有告别期（chatExtension）时不立即结束：继续等 room.update
+            # （对方回到房间 / 对方离开 / 告别期状态变化都会下发）
+            if self.state == GameState.RESULT and self._chat_extension is None:
                 return {
                     "ok": True,
                     "timed_out": True,
@@ -172,8 +189,15 @@ class TuringClient:
             raise TuringClientError("消息不能为空")
         if len(message) > 2000:
             raise TuringClientError("消息过长，最多 2000 个字符")
-        if self.state not in {GameState.ACTIVE, GameState.MATCHED, GameState.LOCKED_WAIT}:
+        if self.state not in {
+            GameState.ACTIVE,
+            GameState.MATCHED,
+            GameState.LOCKED_WAIT,
+            GameState.EXTENDED,
+        }:
             raise TuringClientError("当前不在可聊天状态")
+        if self.state == GameState.EXTENDED and not self._chat_extension_can_send():
+            raise TuringClientError("当前告别期不可发送消息（只读/等待对方）")
         if not self._room_id:
             raise TuringClientError("房间尚未建立")
         if self._last_message_sent_monotonic is not None:
@@ -208,6 +232,29 @@ class TuringClient:
             self._remember_message(ack.get("message"), fallback={"sender": "self", "text": message})
             await self._publish({"event": "message_sent", "text": message})
             return {"ok": True, "state": self.snapshot()}
+        except TuringClientError as exc:
+            # HTTP fallback：WS 不可用/超时时直接 POST（前端同款路径）
+            try:
+                fallback = await self._http_json(
+                    f"/api/turing/rooms/{self._room_id}/messages",
+                    method="POST",
+                    body={
+                        "sessionId": self._session_id,
+                        "clientMessageId": client_message_id,
+                        "text": message,
+                    },
+                    auth=True,
+                )
+                self._first_message_sent = True
+                self._last_message_sent_monotonic = time.monotonic()
+                self._remember_message(
+                    fallback.get("message"),
+                    fallback={"sender": "self", "text": message},
+                )
+                await self._publish({"event": "message_sent", "text": message})
+                return {"ok": True, "state": self.snapshot(), "fallback": True}
+            except TuringClientError:
+                raise exc
         finally:
             self._pending.pop(request_id, None)
 
@@ -239,6 +286,12 @@ class TuringClient:
             auth=True,
         )
         self._my_guess = normalized
+        # 响应是完整房间对象（2026-08-02 告别期）：结算响应可能已带 chatExtension，
+        # 提前解析，否则 RESULT 状态下 wait_event 会立即 finished 丢告别期事件
+        if isinstance(data.get("chatExtension"), dict):
+            self._chat_extension = dict(data["chatExtension"])
+        if str(data.get("state")) == "extended":
+            self.state = GameState.EXTENDED
         result = self._extract_result(data)
         result = self._enrich_result(result)
         if result:
@@ -250,8 +303,31 @@ class TuringClient:
             self.state = GameState.RESULT
             self._dump_session(reason="result")
         else:
-            self.state = GameState.LOCKED_WAIT
+            # 防御：响应已标记 extended（告别期）时不降级为 LOCKED_WAIT
+            if self.state != GameState.EXTENDED:
+                self.state = GameState.LOCKED_WAIT
         await self._publish({"event": "guess_submitted", "guess": normalized, "result": result})
+        return {"ok": True, "state": self.snapshot()}
+
+    async def extend_chat(self) -> dict[str, Any]:
+        """发起/接受告别期「回到房间」，继续聊天（2026-08-02 服务端新功能）。
+
+        结算后房间 state=ended，调用此接口进入告别期（state=extended），
+        双方可继续聊天，5 分钟后彻底关闭；AI 对局为 reviewOnly 不可扩展。
+        """
+
+        if not self._room_id or not self._session_id:
+            raise TuringClientError("当前没有可扩展的房间")
+        data = await self._http_json(
+            f"/api/turing/rooms/{self._room_id}/extend-chat",
+            method="POST",
+            body={"sessionId": self._session_id},
+            auth=True,
+        )
+        # 响应通常是更新后的房间对象；也可能直接返回错误（AI 局/reviewOnly）
+        room = data.get("room") if isinstance(data.get("room"), dict) else data
+        self._apply_room(room)
+        await self._publish({"event": "chat_extended", "state": self.state.value})
         return {"ok": True, "state": self.snapshot()}
 
     async def get_state(self) -> dict[str, Any]:
@@ -265,7 +341,11 @@ class TuringClient:
                 await self._http_json(
                     "/api/turing/leave",
                     method="POST",
-                    body={"ticketId": self._ticket_id, "sessionId": self._session_id},
+                    body={
+                        "ticketId": self._ticket_id,
+                        "roomId": self._room_id,
+                        "sessionId": self._session_id,
+                    },
                     auth=True,
                 )
             except TuringClientError as exc:
@@ -310,7 +390,15 @@ class TuringClient:
             "first_message_remaining_sec": remaining(self._first_message_deadline_ms),
             "guess_unlock_remaining_sec": remaining(self._guess_unlocks_at_ms),
             "room_remaining_sec": remaining(self._ends_at_ms),
-            "can_send": self.state in {GameState.ACTIVE, GameState.MATCHED} and bool(self._room_id),
+            "can_send": bool(self._room_id)
+            and (
+                self.state in {GameState.ACTIVE, GameState.MATCHED}
+                or (
+                    self.state == GameState.EXTENDED
+                    and self._chat_extension_can_send()
+                )
+            ),
+            "chat_extension": self._chat_extension,
             "can_guess": bool(self._room_id)
             and not self._my_guess
             and guess_unlocked
@@ -318,6 +406,7 @@ class TuringClient:
             "my_guess": self._my_guess,
             "opponent_guess": self._opponent_guess,
             "peer_locked": self._peer_locked,
+            "first_locked_by": self._first_locked_by,
             "result": self._result,
             "last_error": self._last_error,
         }
@@ -386,10 +475,12 @@ class TuringClient:
         self._my_guess = None
         self._opponent_guess = None
         self._peer_locked = False
+        self._first_locked_by = None
         self._result = None
         self._last_error = None
         self._last_sequence = 0
         self._room_subscribe_sent = False
+        self._chat_extension = None
 
     async def _login(self) -> None:
         data = await self._http_json(
@@ -583,6 +674,21 @@ class TuringClient:
             ack_message = message.get("message")
             self._remember_message(ack_message)
             return
+        if message_type == "room.superseded":
+            # 该对局已在另一个窗口建立连接：停止订阅并标记错误状态
+            self._room_subscribe_sent = True
+            self.state = GameState.ERROR
+            self._last_error = str(
+                message.get("message")
+                or message.get("error")
+                or "该对局已在另一个窗口建立连接"
+            )
+            await self._publish({"event": "superseded", "message": self._last_error})
+            return
+        if message_type in {"match.unsubscribe", "room.unsubscribe"}:
+            # 订阅确认/取消通知，无需变更状态
+            await self._publish({"event": "unsubscribed", "type": message_type})
+            return
         if message_type in {"match.fatal", "room.fatal"}:
             self.state = GameState.ERROR
             self._last_error = str(message.get("error") or message.get("code") or "远端会话失败")
@@ -616,6 +722,17 @@ class TuringClient:
             self._peer_locked = peer_locked
         if room.get("peerGuess") is not None or room.get("peerLockedAt") is not None:
             self._peer_locked = True
+        # guessState 隐藏字段：firstLockedBy（谁先锁）/ responseWindowMs / deadlineAt
+        guess_state = room.get("guessState")
+        if isinstance(guess_state, dict):
+            if isinstance(guess_state.get("firstLockedBy"), str):
+                self._first_locked_by = guess_state["firstLockedBy"]
+            if guess_state.get("opponentLocked") is True:
+                self._peer_locked = True
+        # 告别期字段（2026-08-02）：available/canSend/reviewOnly/selfReturned/
+        # pending/active/finished/opponentDeparted + 各阶段时间戳
+        if isinstance(room.get("chatExtension"), dict):
+            self._chat_extension = dict(room["chatExtension"])
         result = self._extract_result(room)
         result = self._enrich_result(result)
         if result:
@@ -623,6 +740,8 @@ class TuringClient:
             self._opponent_guess = result.get("opponentGuess")
             self.state = GameState.RESULT
             self._dump_session(reason="result")
+        elif self.state == GameState.EXTENDED:
+            pass  # 告别期状态保持，不被下方 LOCKED_WAIT 覆盖
         elif self._my_guess:
             self.state = GameState.LOCKED_WAIT
         elif self.state in {GameState.MATCHED, GameState.CALIBRATING} and self._room_id:
@@ -647,6 +766,13 @@ class TuringClient:
         current = server_now or int(time.time() * 1000)
         return current >= self._guess_unlocks_at_ms
 
+    def _chat_extension_can_send(self) -> bool:
+        """告别期能否发送消息：chatExtension.canSend === true。"""
+        return bool(
+            isinstance(self._chat_extension, dict)
+            and self._chat_extension.get("canSend") is True
+        )
+
     def _remember_message(
         self, message: Any, *, fallback: dict[str, Any] | None = None
     ) -> None:
@@ -669,6 +795,10 @@ class TuringClient:
         }
         if message.get("createdAt") is not None:
             normalized["created_at"] = message["createdAt"]
+        if isinstance(message.get("sequence"), int):
+            normalized["sequence"] = message["sequence"]
+        if isinstance(message.get("deduplicated"), bool):
+            normalized["deduplicated"] = message["deduplicated"]
         self._messages.append(normalized)
         if sender not in {"system", "self", "me", "player"} and normalized["text"]:
             self._peer_locked = self._peer_locked or False
@@ -700,6 +830,12 @@ class TuringClient:
                     for key in keys
                     if key in item and isinstance(item[key], (str, int, float, bool, type(None)))
                 }
+                # 服务端实际下发的是 actualType；actualIdentity 是本地推导字段
+                if "actualIdentity" not in extracted and isinstance(item.get("actualType"), str):
+                    extracted["actualIdentity"] = item["actualType"]
+                # 结算原因（guess-timeout / both-locked 等）
+                if isinstance(item.get("reason"), str):
+                    extracted["reason"] = item["reason"]
                 opponent = item.get("opponentGuess")
                 if isinstance(opponent, dict) and isinstance(opponent.get("guess"), str):
                     extracted["opponentGuess"] = opponent["guess"]

@@ -30,3 +30,6 @@ build/
 dist/
 *.egg-info/
 .pytest_cache/
+
+# Hermes 桌面附件（对局原始采集数据，含聊天内容，不公开）
+.hermes/

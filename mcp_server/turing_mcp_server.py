@@ -26,14 +26,20 @@ from turing_game.client import TuringClient, TuringClientError
 LOGGER = logging.getLogger("turing-game-mcp")
 
 # Meme knowledge base (zero-dep BM25). Loaded lazily so the server still
-# starts when the KB file is absent.
+# starts when the KB file is absent. Reloads when memes.json mtime changes,
+# so new memes added via add_meme.py are visible without a server restart.
 _meme_index = None
+_meme_index_mtime = None
 _meme_index_path = ROOT / "scripts" / "data" / "memes.json"
 
 
 def _load_meme_index():
-    global _meme_index
-    if _meme_index is not None:
+    global _meme_index, _meme_index_mtime
+    try:
+        mtime = _meme_index_path.stat().st_mtime
+    except OSError:
+        mtime = None
+    if _meme_index is not None and mtime == _meme_index_mtime:
         return _meme_index
     if not _meme_index_path.exists():
         return None
@@ -49,9 +55,11 @@ def _load_meme_index():
             for e in data.values()
         ]
         _meme_index = BM25Index(docs)
+        _meme_index_mtime = mtime
     except Exception:
         LOGGER.exception("failed to load meme KB")
         _meme_index = None
+        _meme_index_mtime = None
     return _meme_index
 
 
@@ -124,7 +132,21 @@ def create_server(client: TuringClient | None = None) -> FastMCP:
             return _json({"ok": False, "error": _safe_error(exc)})
 
     @server.tool()
-    async def meme_search(query: str, top_k: int = 3) -> str:
+    async def turing_extend_chat() -> str:
+        """Request the farewell-phase 'return to room' chat extension.
+
+        After the result, the room enters the farewell phase: call this to
+        keep chatting (state becomes extended). AI-opponent rooms are
+        review-only and will refuse.
+        """
+
+        try:
+            return _json(await game.extend_chat())
+        except Exception as exc:
+            return _json({"ok": False, "error": _safe_error(exc)})
+
+    @server.tool()
+    async def meme_search(term: str, top_k: int = 3) -> str:
         """Search the local meme knowledge base for a meme/network slang term.
 
         Returns matching entries with title, score, source, and a short
@@ -139,7 +161,7 @@ def create_server(client: TuringClient | None = None) -> FastMCP:
                     {"ok": False, "error": "梗知识库未构建，先运行 scripts/build_kb.py"}
                 )
             results = []
-            for score, title, summary, source in index.search(query, top_k):
+            for score, title, summary, source in index.search(term, top_k):
                 results.append(
                     {
                         "title": title,
@@ -148,7 +170,7 @@ def create_server(client: TuringClient | None = None) -> FastMCP:
                         "summary": summary[:500],
                     }
                 )
-            return _json({"ok": True, "query": query, "results": results})
+            return _json({"ok": True, "term": term, "results": results})
         except Exception as exc:
             return _json({"ok": False, "error": _safe_error(exc)})
 
