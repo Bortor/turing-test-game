@@ -243,3 +243,20 @@ window.__fetchHooked // 标志位
 - 本局结束后没有自动启动下一局
 
 验证过程中对手仅发送简短问候，脚本在锁定后未继续发言；该行为符合房间已锁定后的状态机约束。
+
+## 14. 生态观察日志
+
+### 2026-08-04：作者 vlog「服务器持续断连，真相浮出水面！part1」
+
+- 触发源：作者 B 站动态（龙皮皮ACG, UID 17598723）08-01 发布开发日记 vlog，
+  承接 07-27「图灵测试目前服务异常。正在检修中」动态，属运维性质记录。
+- 前端资产：index.html 仍引用 `index-7uw74jWv.js` + `index-C49qFdOm.css`，
+  与 watch 基线一致 → 无新 JS/CSS，协议面无改动迹象。
+- 客户端现状（已覆盖，无需改动）：
+  - WS 带 `ping_interval=20 / ping_timeout=20` 心跳；
+  - 断线指数退避重连（1s 起，上限 `ws_reconnect_max_sec`）；
+  - 重连后 `_subscribe_current` 自动补 `room.subscribe`（带 afterSequence 增量续订）。
+- 结论：该动态不构成协议变更；若服务器断连持续，注意观察 WS 断连是否伴随
+  `match_ticket_expired`（410），以及重连后房间是否仍有效（room gone 时
+  wait_event 会收到 result/error，客户端已按状态机处理）。
+

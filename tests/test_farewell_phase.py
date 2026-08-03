@@ -35,11 +35,11 @@ check("chatExtension 已解析", client._chat_extension is not None and client._
 
 # --- 2. RESULT + 有 chatExtension → wait_event 不立即 finished ---
 snap = client.snapshot()
-async def test_wait():
+async def _wait_check():
     # 没有事件时，RESULT+chatExtension 应继续等待直到超时（不是 finished）
     r = await client.wait_event(0.3)
     return r
-r = asyncio.run(test_wait())
+r = asyncio.run(_wait_check())
 check("RESULT+chatExtension 不立即 finished", r.get("finished") is not True, f"finished={r.get('finished')}")
 
 # --- 3. extended 房间 → EXTENDED 状态，不被 _my_guess 覆盖 ---
