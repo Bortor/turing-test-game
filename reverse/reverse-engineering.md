@@ -260,3 +260,32 @@ window.__fetchHooked // 标志位
   `match_ticket_expired`（410），以及重连后房间是否仍有效（room gone 时
   wait_event 会收到 result/error，客户端已按状态机处理）。
 
+### 2026-08-04 12:00：前端资产更新（watch 触发适配）
+
+- 前端资产变化：`index-7uw74jWv.js` + `index-C49qFdOm.css`
+  → `index-BuoAOX_F.js` + `index-DgNc1rWb.css`（Vite 重新构建）。
+- **clientVersion 更新**：`37a9c12cd3cc7c9f35b1089960999b2f3f6ef035`
+  → `dddd5c42198a853910e506cf02c0abe18f29704c`。
+  客户端 `models.py` 默认值已同步（可被 TT_CLIENT_VERSION 覆盖）。
+  若 start 返回 `turing_client_outdated` 说明版本又变了，需重新抓包。
+- **新增错误码 `turing_phone_verification_required`**：start 匹配时服务端可能返回，
+  表示账号需完成手机号验证才能匹配。前端行为：从 `payload.access` 更新本地 access
+  数据并提示「当前手机号验证服务暂不可用，请稍后再试」（或服务端 message）。
+  已注册且已验证账号理论上不受影响；未验证账号 start 会被拒。
+- **注册/登录流程新增手机验证字段**（仅前端 UI，协议客户端不涉及）：
+  `phone / smsCode / smsSessionId / bindPhone / bindSmsCode / bindSmsSessionId`，
+  短信验证码流程（CSS 类 `turing-auth-phone`、`turing-auth-sms-row` 等）。
+- **WS 消息类型无变化**：match.*（subscribe/subscribed/update/fatal/unsubscribe）、
+  room.*（subscribe/subscribed/update/fatal/superseded/unsubscribe）、
+  message.send/ack 全部与旧版一致。端点无变化（`/api/turing${l}` 模板 + socket）。
+- 管理面板 chunk 更新（admin 专属，不影响协议客户端）：
+  `TuringAdminPanel-oRv5s0WF.js` → `TuringAdminPanel-BJUBZ-bZ.js`、
+  `WeirdChatAdminPanel-CeMJHSvs.js` → `WeirdChatAdminPanel-WPAv6J3o.js`。
+- UI 新增：广告位（`turing-ad-slot`，debug 模式 `is-debug` 占位）、
+  消息举报（`/rooms/{id}/messages/{msgId}/report` POST，旧版已有未记录）、
+  结算后导出图片/回顾（`turing-result-export-image`、`turing-post-game-review-actions`）、
+  设置面板（`turing-settings`）。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py），
+  无协议机制变化 → 未改 WS/状态机代码。手机验证门槛若开始影响已注册账号，
+  需观察 start 是否返回新错误码（客户端会以 TuringClientError(code=...) 冒泡）。
+
