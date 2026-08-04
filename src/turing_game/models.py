@@ -60,6 +60,9 @@ class GameConfig:
     chat_duration_sec: int = 600
     match_timeout_sec: int = 30
     allow_anonymous_chat_research: bool = False
+    # 2026-08-04 前端新增：趣味匹配开关（"打开我超牛的对手将优先匹配在一起"），
+    # 随 start 请求体下发；默认关闭，协议无关，仅匹配偏好
+    fun_match_enabled: bool = False
     registered_privacy_notice_version: int = 1
     http_timeout_sec: float = 20.0
     ws_open_timeout_sec: float = 15.0
@@ -108,6 +111,7 @@ class GameConfig:
             chat_duration_sec=integer("TT_CHAT_DURATION_SEC", defaults.chat_duration_sec),
             match_timeout_sec=integer("TT_MATCH_TIMEOUT_SEC", defaults.match_timeout_sec),
             allow_anonymous_chat_research=os.getenv("TT_ALLOW_RESEARCH", "0") == "1",
+            fun_match_enabled=os.getenv("TT_FUN_MATCH_ENABLED", "0") == "1",
             registered_privacy_notice_version=integer(
                 "TT_PRIVACY_NOTICE_VERSION", defaults.registered_privacy_notice_version
             ),

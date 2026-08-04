@@ -123,6 +123,7 @@ class TuringClient:
             "clientVersion": self.config.client_version,
             "chatDurationSec": self.config.chat_duration_sec,
             "matchTimeoutSec": self.config.match_timeout_sec,
+            "funMatchEnabled": self.config.fun_match_enabled,
             "allowAnonymousChatResearch": self.config.allow_anonymous_chat_research,
             "registeredPrivacyNoticeVersion": self.config.registered_privacy_notice_version,
         }

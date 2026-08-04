@@ -289,3 +289,16 @@ window.__fetchHooked // 标志位
   无协议机制变化 → 未改 WS/状态机代码。手机验证门槛若开始影响已注册账号，
   需观察 start 是否返回新错误码（客户端会以 TuringClientError(code=...) 冒泡）。
 
+### 2026-08-04 12:30：补充发现 `funMatchEnabled`（上一轮遗漏）
+
+- **start 请求体新增字段 `funMatchEnabled`**（bool，默认 false）：旧版
+  `index-7uw74jWv` 中完全不存在，新版 `index-BuoAOX_F` 随
+  `{nickname, protocolVersion, clientVersion, chatDurationSec, matchTimeoutSec, ...}`
+  一并下发。语义：趣味匹配开关（设置 UI 文案「打开我超牛的对手将优先匹配
+  在一起」），仅匹配偏好，不影响协议状态机。
+- 适配：`src/turing_game/models.py` 新增 `fun_match_enabled` 配置
+  （`TT_FUN_MATCH_ENABLED=1` 开启），`client.py` start body 带
+  `"funMatchEnabled": false` 默认值，与前端默认一致。
+- 服务端对缺失字段的行为未实测（离线分析推断为宽松解析，不传等同 false）；
+  若 start 因此报错（如 400），以抓包为准回退该字段。
+
