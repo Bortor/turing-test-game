@@ -309,6 +309,15 @@ window.__fetchHooked // 标志位
 - **clientVersion 更新**：`dddd5c42198a853910e506cf02c0abe18f29704c`
   → `96a72363a680a96076e8c8812745d92c7f326f26`。
   客户端 `models.py` 默认值已同步（可被 TT_CLIENT_VERSION 覆盖）。
+
+### 2026-08-05 14:32：前端资产再次更新（同日第二次）
+
+- 前端资产变化：`index-CkRu-209.js` → `index-CIenCRoJ.js`（`?v=8cb7adea5879`）。
+- **clientVersion 更新**：`96a72363a680a96076e8c8812745d92c7f326f26`
+  → `8cb7adea5879fca01fe22f4026a5f6266bda2985`。
+  客户端 `models.py` 默认值已同步；config.yaml `TT_CLIENT_VERSION` 同步更新
+  （旧值 37a9c12 为 08-02 遗留，env 覆盖优先级高于 models.py 默认值，
+  若只改仓库不改 config 会继续被拒，需重启 Hermes 使 MCP server 重新注入 env）。
 - **新增错误码（start 匹配阶段）**：
   - `turing_match_verification_required` / `turing_match_verification_failed`：
     安全校准（匹配验证）不满足。前端行为：提示「安全校准已更新，请再次点击

@@ -56,7 +56,8 @@ class GameConfig:
     # 2026-08-02 更新：服务端 serviceVersion b2f868e → 37a9c12（新增告别期/chatExtension）
     # 2026-08-04 更新：前端资产 index-7uw74jWv → index-BuoAOX_F，clientVersion → dddd5c42
     # 2026-08-05 更新：前端资产 index-BuoAOX_F → index-CkRu-209，clientVersion → 96a72363
-    client_version: str = "96a72363a680a96076e8c8812745d92c7f326f26"
+    # 2026-08-05 14:32 更新：前端资产 index-CkRu-209 → index-CIenCRoJ，clientVersion → 8cb7adea
+    client_version: str = "8cb7adea5879fca01fe22f4026a5f6266bda2985"
     protocol_version: int = 3
     chat_duration_sec: int = 600
     match_timeout_sec: int = 30
