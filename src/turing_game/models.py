@@ -55,7 +55,8 @@ class GameConfig:
     # 服务端更新版本后可能失效，可通过 TT_CLIENT_VERSION 覆盖为当前抓包值。
     # 2026-08-02 更新：服务端 serviceVersion b2f868e → 37a9c12（新增告别期/chatExtension）
     # 2026-08-04 更新：前端资产 index-7uw74jWv → index-BuoAOX_F，clientVersion → dddd5c42
-    client_version: str = "dddd5c42198a853910e506cf02c0abe18f29704c"
+    # 2026-08-05 更新：前端资产 index-BuoAOX_F → index-CkRu-209，clientVersion → 96a72363
+    client_version: str = "96a72363a680a96076e8c8812745d92c7f326f26"
     protocol_version: int = 3
     chat_duration_sec: int = 600
     match_timeout_sec: int = 30

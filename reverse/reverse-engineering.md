@@ -302,3 +302,55 @@ window.__fetchHooked // 标志位
 - 服务端对缺失字段的行为未实测（离线分析推断为宽松解析，不传等同 false）；
   若 start 因此报错（如 400），以抓包为准回退该字段。
 
+### 2026-08-05 12:00：前端资产更新（watch 触发适配）
+
+- 前端资产变化：`index-BuoAOX_F.js` + `index-DgNc1rWb.css`
+  → `index-CkRu-209.js` + `index-D4lbjuix.css`（Vite 重新构建，体积 +14KB JS）。
+- **clientVersion 更新**：`dddd5c42198a853910e506cf02c0abe18f29704c`
+  → `96a72363a680a96076e8c8812745d92c7f326f26`。
+  客户端 `models.py` 默认值已同步（可被 TT_CLIENT_VERSION 覆盖）。
+- **新增错误码（start 匹配阶段）**：
+  - `turing_match_verification_required` / `turing_match_verification_failed`：
+    安全校准（匹配验证）不满足。前端行为：提示「安全校准已更新，请再次点击
+    开始匹配」，重置到 intro 页并设置重新校准 flag（`zn(!0)`），下次 start 会
+    重新走校准流程。协议客户端遇到这两个 code 属预期重试场景：重新调 start
+    即可（calibrating 状态由 WS match.update 驱动）。
+  - 旧错误码 `turing_security_calibration_required` / `turing_security_calibration_failed`
+    保留，与 match_verification_* 走同一 catch 分支（本次补记，旧版已有）。
+  - `turing_account_required`（本次补记，旧版已有）：游客账号匹配受限，
+    `payload.access.guestMatchLimit` 更新剩余次数，`access.registrationRequired`
+    为 true 时需注册。已注册账号不受影响。
+  - `turing_phone_verification_required` 保留：`payload.access` 更新本地 access，
+    需完成手机号验证（「因为网站出现异常事件，临时开启手机注册验证」）。
+- **补记 securityRequirement 机制（旧版已有，08-04 轮漏记）**：
+  room.update 可携带 `securityRequirement` 字段，值域 `"registration"` /
+  `"phone_verification"`：
+  - `registration`：你的首次发言被举报，需注册或登录后再继续
+    （前端提示「你的首次发言被举报，请注册或登录后再继续。」）；
+  - `phone_verification`：需先完成手机号验证（「为保护聊天环境，请先完成
+    手机号验证后再继续。」）。
+  语义：服务端在聊天过程中下发安全门槛，前端检测到值变化后暂停聊天并弹出
+  验证 UI（CSS 类 `turing-emergency-security`）。对协议客户端：房间对象多一
+  个字段，宽容解析不受影响；但发送消息可能被服务端拒绝，若 room.update 带
+  该字段应停止发送并报告。**尚未实测触发条件**，仅离线记录。
+- **start 请求体完整字段**（本次核对旧版一致，08-04 轮未记全）：
+  `nickname / protocolVersion / clientVersion / chatDurationSec /
+  matchTimeoutSec / funMatchEnabled / allowAnonymousChatResearch /
+  registeredPrivacyNoticeVersion`，debug 模式追加 `debugParams`。
+  `allowAnonymousChatResearch`（匿名聊天研究同意，默认 false）与
+  `registeredPrivacyNoticeVersion`（隐私通知版本）客户端已支持
+  （TT_ALLOW_RESEARCH / TT_PRIVACY_NOTICE_VERSION），无需改动。
+- **无协议机制变化**：WS 消息类型（match.*/room.*/message.send+ack）、
+  端点模板（`/api/turing${l}`→`${n}` 仅为 minified 变量名）、
+  guess 提交 body `{sessionId, guess}`、chatExtension 字段集全部与旧版一致。
+  `holdSettlement`/`deferredSettlement` 是前端本地结算动画状态，不上送协议。
+- UI 新增（CSS +7 类，均不影响协议）：`turing-emergency-security`（安全门槛
+  弹层）、`turing-generate-image-button`（结算后生成聊天长图）、
+  `turing-result-share-icon-button`（结果分享）、`turing-review-result-button`
+  （结果回顾）。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）。
+  新错误码/securityRequirement 机制无需代码改动（错误码原样冒泡、
+  房间字段宽容解析）；若实际对局中 start 返回 match_verification_* 或
+  room.update 带 securityRequirement，需抓包记录触发条件后决定是否硬编码处理。
+
+
