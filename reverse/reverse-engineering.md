@@ -362,4 +362,34 @@ window.__fetchHooked // 标志位
   房间字段宽容解析）；若实际对局中 start 返回 match_verification_* 或
   room.update 带 securityRequirement，需抓包记录触发条件后决定是否硬编码处理。
 
+### 2026-08-06 12:00：前端资产更新（watch 触发适配）
+
+- 前端资产变化：`index-CkRu-209.js` → `index-KZ7_3jXh.js`（Vite 重新构建，
+  体积 +1.3KB：635,894 → 637,162 bytes）。
+- **clientVersion 更新**：`8cb7adea5879fca01fe22f4026a5f6266bda2985`
+  → `ddefd4ebd35e3d1787479efa109e257383890ffa`。
+  客户端 `models.py` 默认值已同步（可被 TT_CLIENT_VERSION 覆盖）。
+- **协议面零变化**（新旧 JS 全量对比确认）：
+  - WS 消息类型 13 种完全一致（match.subscribe/subscribed/update/fatal/
+    unsubscribe、room.subscribe/subscribed/update/fatal/superseded/
+    unsubscribe、message.send/ack）；
+  - 错误码集合 13 个完全一致（turing_account_required 等）；
+  - start 请求体字段 9 个完全一致（nickname/protocolVersion/clientVersion/
+    chatDurationSec/matchTimeoutSec/funMatchEnabled/allowAnonymousChatResearch/
+    registeredPrivacyNoticeVersion/debugParams）；
+  - chatExtension/告别期字段集完全一致（availableUntil/inviteEndsAt/
+    startedAt/endsAt/requestedAt/pending/canSend/reviewOnly/selfReturned/
+    opponentDeparted/finished）。
+- **新增页面级维护模式检测（仅前端 UI，不影响协议）**：
+  前端每 15s 轮询 `GET /maintenance`（visibilitychange 时立即查一次），
+  响应 `{active: true, message: "..."}` 时渲染全屏维护弹窗
+  （`turing-maintenance-backdrop` + `SERVER MAINTENANCE` 标记，默认文案
+  「网站维护中，请稍后访问。」）；请求失败或 `active !== true` 时清除弹窗。
+  2026-08-06 实测：直接 curl `/maintenance` 返回 SPA index.html（非 JSON），
+  说明该端点平时不存在（走 SPA fallback）或仅在维护窗口期启用；前端 catch
+  静默处理。协议客户端无需轮询该端点；若维护期间 start 被服务端拒绝，
+  以返回的错误码/HTTP 状态为准（观察项，未实测）。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py），
+  无协议机制变化 → 未改 WS/状态机代码。
+
 
