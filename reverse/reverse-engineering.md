@@ -392,4 +392,77 @@ window.__fetchHooked // 标志位
 - 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py），
   无协议机制变化 → 未改 WS/状态机代码。
 
+### 2026-08-07 12:00：前端资产更新（watch 触发适配）
+
+- 前端资产变化：`index-KZ7_3jXh.js` + `index-D4lbjuix.css`
+  → `index-CX6W-B3M.js` + `index-D5iVH8o3.css`（Vite 重新构建，JS +3.6KB：637,162
+  → 640,768 bytes；CSS 145,669 bytes）。
+- **clientVersion 更新**：`ddefd4ebd35e3d1787479efa109e257383890ffa`
+  → `fd41c0cd17233dc464c8df990400a43d90bc08ed`。
+  客户端 `models.py` 默认值已同步（可被 TT_CLIENT_VERSION 覆盖）。
+- **协议面保持项**（新旧全量特征对比确认）：
+  - WS 消息类型 13 种完全一致（match.subscribe/subscribed/update/fatal/
+    unsubscribe、room.subscribe/subscribed/update/fatal/superseded/
+    unsubscribe、message.send/ack）；
+  - 错误码集合 13 个完全一致（turing_account_required、turing_client_outdated、
+    turing_compliance_v*、turing_external_link_blocked、turing_match_verification_*、
+    turing_phone_verification_required、turing_private_info_blocked、turing_queue_full、
+    turing_room_gone、turing_security_calibration_*、turing_socket_unavailable）；
+  - message.send body `{roomId, sessionId, clientMessageId, text}`（responseType
+    message.ack）不变；guess body `{sessionId, guess}` 不变；
+  - leave body `{ticketId, roomId, sessionId}`（带房间）或 `{ticketId, sessionId}`
+    （仅排队）不变，与客户端实现一致。
+- **变化 ①：start 请求体移除 `nickname` 字段**（新版前端不再发送，服务端从
+  JWT token 取昵称）。旧客户端仍发 nickname 属多余字段，预计被服务端宽容忽略；
+  协议客户端保留发送以支持自定义显示名，观察是否被拒（若 start 开始报错再移除）。
+- **变化 ②：匹配安全挑战机制（新端点 + 新字段）**：
+  - config 新增 `matchProofOfWorkRequired`（bool）。为 true 时（前端 UI 显示
+    「实名认证已开启」「每次开始匹配前都会在本地自动完成一次安全验证码验算」），
+    start 前先 `GET /api/turing/match-security-challenge`；
+  - 响应 `{required: false}` → 无需挑战，跳过；否则为 altcha 挑战对象，
+    本地完成 PoW 验算后得到 `altcha` 字符串；
+  - start body 条件性新增 `matchAltcha: <altcha 字符串>`（展开进 body，
+    与 guest-security-challenge 结果并列）；
+  - 访客路径不变：`GET /api/turing/guest-security-challenge` → 响应对象直接
+    展开进 start body（securityCalibrationToken 字段名已不在前端源码出现，
+    服务端响应透传，字段名由服务端决定——注意旧版字段名可能已改）。
+  - **客户端影响**：Python 客户端暂无 altcha PoW 实现；若服务端实际开启
+    matchProofOfWorkRequired，start 可能被拒（预期错误码 turing_match_
+    verification_required/failed 或 400）。观察项：开启后需实现 altcha
+    PoW 求解（hashcash 风格：对 challenge+salt+number 做 SHA-256 前缀碰撞，
+    Python hashlib 可实现）并打 match-security-challenge 拿 matchAltcha。
+- **变化 ③：verificationMode 新增取值 `"arithmetic"`**（算术验证码），与
+  "altcha" 并列；`registrationDefaultMode` 新增 "phone"（手机号注册优先）。
+  影响注册/验证 UI 流程，不影响对局协议；config 解析前端按
+  `=== "arithmetic" ? "arithmetic" : "altcha"` 归一化。
+- **变化 ④：config 新增字段**（start 响应与 /auth/account-access 共享结构，
+  客户端宽容解析不受影响）：
+  `matchProofOfWorkRequired / phoneVerifiedMatchRequired / emergencySecurityNotice /
+  phoneAuthEnabled / registrationDefaultMode / phoneVerification{required,ready,...} /
+  preRoomAnnouncement / guestForcedAiEnabled / guestForcedAiPercent /
+  smsDailyBudget / smsDailyUsage{used,distinctPhones,distinctClients,windowHours} /
+  registrationRequired`。
+  其中 `phoneVerifiedMatchRequired`（手机验证匹配门槛）与 `preRoomAnnouncement`
+  （入房前公告）为对局前门槛/提示，错误码 turing_phone_verification_required
+  已覆盖前者行为；`guestForcedAi*`（游客强制 AI 匹配开关/百分比）影响匹配
+  体验不涉及协议。
+- **变化 ⑤：房间状态 HTTP 回退轮询**（容错机制，非主协议）：
+  `GET /api/turing/rooms/{roomId}?sessionId=...&after=<seq>&afterSequence=<seq>`
+  返回房间快照（同 room.update 解析）。用途：WS 断线/不支持时的增量续订兜底；
+  成功间隔基础轮询、失败指数退避（上限 + 随机抖动），页面隐藏时用更长间隔。
+  协议客户端已有 WS 断线重连 + 增量续订（after/afterSequence），无需 HTTP 轮询。
+- **变化 ⑥：前端框架 React 19.2.0**（升级，无协议影响）；注册表单新增实名
+  字段 `realName / idNumber`（国内实名认证要求，注册/验证流程，不影响对局）；
+  设置面板本地项 `enterToSend / sound / reducedMotion / verdictStampEnabled`
+  （localStorage 本地偏好，不上送协议）。
+- **维护模式/版本一致性前置检查**（旧版已有，补记）：start 前检查
+  `/maintenance` 状态（维护中直接拦截，文案「网站维护中，请稍后访问。」）；
+  clientVersion 与 serviceVersion 不一致时前端拦截（「页面与服务版本不一致，
+  请刷新页面；若仍出现，请重启后端服务。」）——印证 clientVersion 必须保持
+  与最新前端同步，否则 start 被拒（turing_client_outdated）。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）。
+  matchProofOfWorkRequired / nickname 移除属观察项（服务端开启与否未实测），
+  未改 start 请求构造；若 start 开始返回 match_verification_* 或 400，
+  再实现 matchAltcha 流程并移除 nickname。
+
 
