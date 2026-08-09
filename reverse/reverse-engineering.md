@@ -466,3 +466,30 @@ window.__fetchHooked // 标志位
   再实现 matchAltcha 流程并移除 nickname。
 
 
+
+### 2026-08-09 12:00：前端资产更新（watch 触发适配 #2）
+
+- 前端资产变化：`index-CX6W-B3M.js` + `index-D5iVH8o3.css`
+  → `index-Cb0bc0Sy.js` + `index-D5iVH8o3.css`（CSS 未变；JS 仍 640,768 bytes，
+  md5 2bff0876 → 4c4bcda1）。首页 HTML 引用带 `?v=a34a6e1d5c98`（= 新 clientVersion 前缀）。
+- **clientVersion 更新**：`fd41c0cd17233dc464c8df990400a43d90bc08ed`
+  → `a34a6e1d5c98915b78f510583a32dfa688e49f1a`。
+  客户端 `models.py` 默认值已同步（可被 TT_CLIENT_VERSION 覆盖）。
+- **diff 仅 3 处**（新旧全量逐行对比）：
+  1. 第 1/17 行：admin 面板 chunk 重建（TuringAdminPanel-3Tx-rKs0 →
+     BimBAdxe、zap-OA22W76V → T1NCf0P-、WeirdChatAdminPanel-sw4QodXB →
+     C4xzc56K）——admin 专属，不影响协议客户端；
+  2. 第 21 行：`mm` 常量（clientVersion）更新，如上。
+  其余常量（zp=3 协议版本、8e3/2e4/5e3/15e3/3e4/90e3/1800e3 时间参数）零变化。
+- **协议面零变化**（新旧全量特征对比确认）：
+  - WS 消息类型 13 种完全一致（match.subscribe/subscribed/update/fatal/
+    unsubscribe、room.subscribe/subscribed/update/fatal/superseded/unsubscribe、
+    message.send/ack）；
+  - 错误码集合 13 个完全一致（与 2026-08-07 记录相同）；
+  - 端点不变：`/api/turing/socket`、`/api/auth/account-access`、
+    match-security-challenge、guest-security-challenge、extend-chat；
+  - 字段不变：matchAltcha / matchProofOfWorkRequired / funMatchEnabled /
+    clientMessageId / afterSequence / preRoomAnnouncement 等全部存在。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py），
+  无协议机制变化 → 未改 WS/状态机代码。观察项（matchProofOfWorkRequired
+  是否已开启、nickname 是否被拒）延续 2026-08-07 记录，继续观察。
