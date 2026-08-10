@@ -493,3 +493,64 @@ window.__fetchHooked // 标志位
 - 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py），
   无协议机制变化 → 未改 WS/状态机代码。观察项（matchProofOfWorkRequired
   是否已开启、nickname 是否被拒）延续 2026-08-07 记录，继续观察。
+
+### 2026-08-10 12:00：前端资产更新（watch 触发适配 #3）
+
+- 前端资产变化：`index-Cb0bc0Sy.js` + `index-D5iVH8o3.css`
+  → `index-uckJV3wA.js` + `index-DbCjXzRz.css`（Vite 重新构建，
+  JS 640,768 → 641,444 bytes；CSS 更新，旧 CSS 文件名已不在首页引用）。
+  首页 HTML 引用带 `?v=2a5cca135352`（= 新 clientVersion 前缀）。
+- **clientVersion 更新**：`a34a6e1d5c98915b78f510583a32dfa688e49f1a`
+  → `2a5cca135352f10e7e026eb9d6d58215e0ced3e8`。
+  客户端 `models.py` 默认值已同步；Hermes config.yaml
+  `TT_CLIENT_VERSION` 同步更新（hermes config set 写入；
+  注意该 env 此前停在 8cb7adea（08-05 值），08-06/08-07/08-09
+  三轮只改了仓库 models.py 未同步 config——env 覆盖优先级高于
+  models.py，需重启 Hermes 使 MCP server 重新注入 env）。
+- **协议面零变化**（新旧全量特征对比确认）：
+  - WS 消息类型 13 种完全一致（match.subscribe/subscribed/update/fatal/
+    unsubscribe、room.subscribe/subscribed/update/fatal/superseded/
+    unsubscribe、message.send/ack）；
+  - 错误码集合 12 个完全一致（turing_account_required、
+    turing_client_outdated、turing_compliance_v*、
+    turing_external_link_blocked、turing_match_verification_*、
+    turing_phone_verification_required、turing_private_info_blocked、
+    turing_queue_full、turing_room_gone、
+    turing_security_calibration_*、turing_socket_unavailable）；
+  - 硬编码端点仅 `/api/auth/account-access` + `/api/turing/socket`，
+    其余模板拼接，与旧版一致；match-security-challenge /
+    guest-security-challenge / extend-chat / rooms/{id}/guess 不变；
+  - start body 字段全一致（nickname 仍不在前端发送，延续 08-07 观察；
+    protocolVersion=3 / clientVersion / chatDurationSec / matchTimeoutSec /
+    funMatchEnabled / allowAnonymousChatResearch /
+    registeredPrivacyNoticeVersion / matchAltcha / debugParams）；
+  - chatExtension/告别期字段集、afterSequence 增量续订、
+    securityRequirement、matchProofOfWorkRequired、preRoomAnnouncement
+    全部存在，与旧版一致。
+- **变化 ①：维护模式 UI 升级为微信小游戏推广页**（仅前端 UI，未启用）：
+  旧版维护弹窗（`turing-maintenance-icon` + 文案「网站维护中，请稍后
+  访问。」）被替换为多平台引导页：CSS 类 `turing-maintenance-platforms` /
+  `turing-maintenance-wechat` / `turing-maintenance-wechat-copy`，
+  新增静态资源 `/assets/turing-wechat-minigame-qr-Fftpuclj.jpg`
+  （微信小游戏二维码），文案「全民图灵测试微信小游戏码」「支持
+  微信/QQ 双平台」「正在内测中」「网页版仍在维护中，请等待通知」
+  「网页版本暂不可用，欢迎使用微信小游戏版本：」。`/maintenance`
+  轮询逻辑保留（15s + visibilitychange）。2026-08-10 实测
+  `/maintenance` 返回 200 空响应（非 JSON）→ 维护模式未启用，
+  网页版当前可正常访问。
+- **变化 ②：服务端运行时配置变化**（非前端代码，实测 account-access）：
+  `registrationRequired: true`、`guestMatchLimit: 0`（此前记录为 1）——
+  游客匹配已关闭，未注册账号 start 预期被拒（turing_account_required）；
+  `matchProofOfWorkRequired: false`（PoW 仍未开启，观察项延续）、
+  `phoneVerifiedMatchRequired: false`、`registrationDefaultMode:
+  "password"`、`phoneVerification{required:true,ready:true,
+  provider:"aliyun-pnvs",codeLength:6,validSeconds:300,
+  resendSeconds:60}`（手机验证就绪，账号侧要求，不影响已注册账号
+  的对局协议）。
+- admin 面板 chunk 重建（TuringAdminPanel-5phlshn9 / zap-DDf3xLGx /
+  WeirdChatAdminPanel-BdkczFof），admin 专属，不影响协议客户端。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）
+  + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
+  观察项：matchProofOfWorkRequired 是否开启、维护模式是否启用
+  （若启用，start 会被服务端拒绝，以错误码为准）、游客注册门槛
+  变化是否影响 MCP 客户端（已注册账号不受影响）。
