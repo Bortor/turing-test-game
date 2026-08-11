@@ -60,7 +60,9 @@ class GameConfig:
     # 2026-08-06 更新：前端资产 index-CkRu-209 → index-KZ7_3jXh，clientVersion → ddefd4eb
     # 2026-08-07 更新：前端资产 index-KZ7_3jXh → index-CX6W-B3M，clientVersion → fd41c0cd
     # 2026-08-09 更新：前端资产 index-CX6W-B3M → index-Cb0bc0Sy，clientVersion → a34a6e1d
-    client_version: str = "2a5cca135352f10e7e026eb9d6d58215e0ced3e8"
+    # 2026-08-10 更新：前端资产 index-Cb0bc0Sy → index-uckJV3wA，clientVersion → 2a5cca13
+    # 2026-08-11 更新：前端资产 index-uckJV3wA → index-B-A_bZfd，clientVersion → ab69c7cc
+    client_version: str = "ab69c7ccdd2b25c9c3f5ff58f403e8fe4939ec45"
     protocol_version: int = 3
     chat_duration_sec: int = 600
     match_timeout_sec: int = 30

@@ -554,3 +554,32 @@ window.__fetchHooked // 标志位
   观察项：matchProofOfWorkRequired 是否开启、维护模式是否启用
   （若启用，start 会被服务端拒绝，以错误码为准）、游客注册门槛
   变化是否影响 MCP 客户端（已注册账号不受影响）。
+
+### 2026-08-11 12:00：前端资产更新（watch 触发适配 #4）
+
+- 前端资产变化：`index-uckJV3wA.js` + `index-DbCjXzRz.css`
+  → `index-B-A_bZfd.js` + `index-DbCjXzRz.css`（CSS 未变；JS 仍
+  641,444 bytes）。首页 HTML 引用带 `?v=ab69c7ccdd2b`
+  （= 新 clientVersion 前缀）。
+- **clientVersion 更新**：`2a5cca135352f10e7e026eb9d6d58215e0ced3e8`
+  → `ab69c7ccdd2b25c9c3f5ff58f403e8fe4939ec45`。
+  客户端 `models.py` 默认值已同步；Hermes config.yaml
+  `TT_CLIENT_VERSION` 已用 hermes config set 同步
+  （注意：需重启 Hermes 使 MCP server 重新注入 env）。
+- **全量 diff 仅 3 处单行变化，协议面零变化**：
+  ① `__vite__mapDeps` admin chunk 名重建（TuringAdminPanel-5phlshn9
+  → Cs0zian3、zap-DDf3xLGx → BqzeoCpQ、WeirdChatAdminPanel-BdkczFof
+  → Bolmq8Nn），admin 专属，不影响协议客户端；
+  ② Odd World Studio（怪奇世界创作工坊 game-studio 模块）前端更新
+  （非图灵测试模块，与对局协议无关）；
+  ③ clientVersion 常量 mm= 赋值更新。
+  协议特征关键词对比（WS 消息类型 13 种、错误码 12 个、硬编码端点
+  /api/auth/account-access + /api/turing/socket、start body 字段、
+  chatExtension/告别期字段、afterSequence、securityRequirement、
+  matchProofOfWorkRequired、preRoomAnnouncement、debugParams AI 参数
+  Fg、localStorage key anyanygame.turing.*）新旧完全一致。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）
+  + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
+  观察项延续 2026-08-10：matchProofOfWorkRequired 是否开启、维护
+  模式（微信小游戏推广页）是否启用、游客注册门槛变化。
+
