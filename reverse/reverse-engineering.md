@@ -583,3 +583,28 @@ window.__fetchHooked // 标志位
   观察项延续 2026-08-10：matchProofOfWorkRequired 是否开启、维护
   模式（微信小游戏推广页）是否启用、游客注册门槛变化。
 
+
+### 2026-08-12 12:00：前端资产更新（watch 触发适配 #5）
+
+- 前端资产变化：`index-B-A_bZfd.js` + `index-DbCjXzRz.css`
+  → `index-DWHZD6Gp.js` + `index-Dw1I_hmR.css`（JS 仍 641,444 bytes，
+  CSS 148,078 → 148,141 bytes）。
+- **clientVersion 更新**：`ab69c7ccdd2b25c9c3f5ff58f403e8fe4939ec45`
+  → `588dc7a68ce43dd0fd1d2cb6da5a3846d72b4b8f`。
+  客户端 `models.py` 默认值已同步；Hermes config.yaml
+  `TT_CLIENT_VERSION` 已同步（注意：需重启 Hermes 使 MCP server
+  重新注入 env）。
+- **全量 diff 极小（JS 75 字节差异，仅 2 处），协议面零变化**：
+  ① `__vite__mapDeps` admin chunk 名重建（TuringAdminPanel-Cs0zian3
+  → CfAVMNlo、zap-BqzeoCpQ → AB7udjZe、WeirdChatAdminPanel-Bolmq8Nn
+  → 2rSIug1C），admin 专属，不影响协议客户端；
+  ② clientVersion 常量赋值更新（mm=）。
+  CSS 差异仅新增 Tailwind 工具类（如 `.sm\:grid-cols-5`），纯 UI 层。
+  协议特征关键词对比（WS 消息类型、错误码集合、端点
+  /api/auth/account-access + /api/turing/socket、start body 字段、
+  chatExtension/告别期字段、afterSequence、securityRequirement、
+  matchProofOfWorkRequired、preRoomAnnouncement）新旧完全一致。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）
+  + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
+  观察项延续 2026-08-10/08-11：matchProofOfWorkRequired 是否开启、
+  维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
