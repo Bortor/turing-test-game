@@ -608,3 +608,38 @@ window.__fetchHooked // 标志位
   + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
   观察项延续 2026-08-10/08-11：matchProofOfWorkRequired 是否开启、
   维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
+
+### 2026-08-13 12:01：前端资产更新（watch 触发适配 #6）
+
+- 前端资产变化：`index-DWHZD6Gp.js` + `index-Dw1I_hmR.css`
+  → `index-C9NdivmR.js` + `index-D4l9Q9qb.css`（JS 641,444 → 640,789
+  bytes，CSS 148,141 → 148,021 bytes）。
+- **clientVersion 更新**：`588dc7a68ce43dd0fd1d2cb6da5a3846d72b4b8f`
+  → `c6e81308a242534c363aed9464e1fca7e762aabf`（首页 HTML
+  `?v=c6e81308a242` 交叉验证一致）。客户端 `models.py` 默认值已同步；
+  Hermes config.yaml `TT_CLIENT_VERSION` 已同步（需重启 Hermes 使
+  MCP server 重新注入 env）。
+- **协议面零变化**（已逐项核对）：
+  - WS 消息类型 21 种全一致（协议相关：match.subscribe/unsubscribe、
+    message.send、room.subscribe/unsubscribe；responseType 3 种
+    message.ack/room.subscribed 等全一致）；
+  - 端点 `/api/auth/account-access` + `/api/turing/socket` 不变；
+  - 发送双通道机制不变：WS `message.send`（8s 超时）→ 失败
+    （`turing_socket_unavailable`）→ HTTP POST
+    `/api/turing/rooms/{id}/messages` fallback；`message_cooldown`
+    且 retryAfterMs≤1000 时等 retryAfterMs+30ms 重试一次；错误码
+    content_blocked/turing_external_link_blocked/
+    turing_private_info_blocked 仍在（旧 JS 已有同款，本次仅
+    minifier 变量重命名 NS→jS、zm→Rm 等）；
+  - 本次 JS 大 diff（1.27MB）主因是 React 19.2 库代码的 minifier
+    变量名重排（Dd→Rd、ce→ie 等），非业务逻辑变化。
+- **前端 UI 状态机简化（纯 UI，不影响协议）**：消息 deliveryStatus
+  状态从 `pending`/`retrying`/`sent`/`failed` 收敛为仅 `sent`
+  （`pending_` 乐观 ID、「待确认」小字、`turing-message-retry`
+  「发送失败 · 点击重试」内联按钮均删除；失败改为自动重试一次 +
+  抛「消息发送失败，请重试」）。deliveryStatus 非协议字段，MCP
+  客户端不依赖。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）
+  + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
+  观察项延续 2026-08-10~12：matchProofOfWorkRequired 是否开启、
+  维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
