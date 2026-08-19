@@ -726,3 +726,29 @@ window.__fetchHooked // 标志位
   + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
   观察项延续 2026-08-10~17：matchProofOfWorkRequired 是否开启、
   维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
+
+### 2026-08-19 12:05：前端资产更新（watch 触发适配 #10）
+
+- 前端资产变化：`index-Dyt-Xsxu.js` → `index-BC52yJE7.js`（JS
+  640,789 → 640,789 bytes，等长替换；无 CSS 变化）。
+- **clientVersion 更新**：`75e224d546b973c032f02682a9dc71fc5869a901`
+  → `881a14843cee1ee11e09483ae3864bad92b634c5`（首页 HTML
+  `?v=881a14843cee` 交叉验证一致）。客户端 `models.py` 默认值已同步；
+  Hermes config.yaml `TT_CLIENT_VERSION` 已同步（需重启 Hermes 使
+  MCP server 重新注入 env）。
+- **协议面零变化**（逐字符 diff 定位 7 处差异块，全部等长替换、
+  均为已知噪音）：
+  - WS 消息类型、端点（/api/auth/account-access、/api/turing/socket、
+    /extend-chat、/messages）、错误码、协议字段
+    （afterSequence/securityRequirement/matchProofOfWorkRequired/
+    preRoomAnnouncement/chatExtension/guestMatchLimit/deliveryStatus/
+    sequence）新旧集合一致；
+  - ① `__vite__mapDeps` admin chunk 名重建（TuringAdminPanel-C-8LikCx
+    → DwY2XsGW、zap-BqtqAlch → D19x_N8a、WeirdChatAdminPanel-BhbaYyzM
+    → CKs02wwr），admin 专属，不影响协议客户端；
+  - ② clientVersion 常量赋值更新（dm=），周围代码（oS=90*1e3、
+    uS=1800*1e3、_o=!1）一致。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）
+  + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
+  观察项延续 2026-08-10~18：matchProofOfWorkRequired 是否开启、
+  维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
