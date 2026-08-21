@@ -752,3 +752,35 @@ window.__fetchHooked // 标志位
   + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
   观察项延续 2026-08-10~18：matchProofOfWorkRequired 是否开启、
   维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
+
+
+### 2026-08-21 12:00：前端资产更新（watch 触发适配 #11）
+
+- 前端资产变化：`index-BC52yJE7.js` → `index-D3uq1jFH.js`（JS
+  640,789 → 640,789 bytes，等长替换；无 CSS 变化）。
+- **clientVersion 更新**：`881a14843cee1ee11e09483ae3864bad92b634c5`
+  → `93cfb40b66eb5701b49b0a282a22315332f8db58`（首页 HTML
+  `?v=93cfb40b66eb` 交叉验证一致）。客户端 `models.py` 默认值已同步；
+  Hermes config.yaml `TT_CLIENT_VERSION` 已同步（需重启 Hermes 使
+  MCP server 重新注入 env）。
+- **协议面零变化**（30 个协议特征关键词新旧计数逐一核对全一致）：
+  - WS 消息类型（match.subscribe/unsubscribe、message.send、
+    room.subscribe/unsubscribe、message.ack、room.subscribed）不变；
+  - 端点（/api/auth/account-access、/api/turing/socket、/extend-chat、
+    /messages）不变；
+  - 错误码（content_blocked、turing_external_link_blocked、
+    turing_private_info_blocked、turing_socket_unavailable、
+    message_cooldown、retryAfterMs）不变；
+  - 协议字段（afterSequence、securityRequirement、
+    matchProofOfWorkRequired、preRoomAnnouncement、chatExtension、
+    guestMatchLimit、deliveryStatus、sequence）不变。
+- diff 全部等长替换、均为已知噪音（字符级 10 处差异块）：
+  ① `__vite__mapDeps` admin chunk 名重建（TuringAdminPanel-DwY2XsGW
+  → N3ZICrIE、zap-D19x_N8a → DtPyj5tJ、WeirdChatAdminPanel-CKs02wwr
+  → DXHRYYPE），admin 专属，不影响协议客户端；
+  ② clientVersion 常量赋值更新（dm=），周围代码（oS=90*1e3、
+  uS=1800*1e3、_o=!1）一致。
+- 适配动作：仅更新 `client_version` 默认值（src/turing_game/models.py）
+  + config.yaml env 同步。无协议机制变化 → 未改 WS/状态机代码。
+  观察项延续 2026-08-10~19：matchProofOfWorkRequired 是否开启、
+  维护模式（微信小游戏推广页）是否启用、游客注册门槛变化。
